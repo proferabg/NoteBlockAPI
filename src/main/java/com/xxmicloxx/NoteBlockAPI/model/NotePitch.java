@@ -1,7 +1,6 @@
 package com.xxmicloxx.NoteBlockAPI.model;
 
 import com.xxmicloxx.NoteBlockAPI.utils.CompatibilityUtils;
-import org.bukkit.Bukkit;
 
 /**
  * Represents pitches of every noteblock note pre- &amp; post-1.9

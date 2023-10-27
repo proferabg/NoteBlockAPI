@@ -1,12 +1,14 @@
 package com.xxmicloxx.NoteBlockAPI.songplayer;
 
+import com.velocitypowered.api.proxy.Player;
 import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
+import com.xxmicloxx.NoteBlockAPI.VelocityUtils;
 import com.xxmicloxx.NoteBlockAPI.event.*;
 import com.xxmicloxx.NoteBlockAPI.model.*;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.ChannelMode;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.MonoMode;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
+import dev.simplix.protocolize.api.SoundCategory;
+import lombok.Getter;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -23,23 +25,81 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class SongPlayer {
 
+	/**
+	 * -- GETTER --
+	 *  Gets the Song being played by this SongPlayer
+	 *
+	 * @return
+	 */
+	@Getter
 	protected Song song;
+	/**
+	 * -- GETTER --
+	 *  Gets the Playlist being played by this SongPlayer
+	 *
+	 * @return
+	 */
+	@Getter
 	protected Playlist playlist;
 	protected int actualSong = 0;
 
+	/**
+	 * -- GETTER --
+	 *  Returns whether the SongPlayer is actively playing
+	 *
+	 * @return is playing
+	 */
+	@Getter
 	protected boolean playing = false;
 	protected boolean fading = false;
+	/**
+	 * -- GETTER --
+	 *  Gets the current tick of this SongPlayer
+	 *
+	 * @return
+	 */
+	@Getter
 	protected short tick = -1;
 	protected Map<UUID, Boolean> playerList = new ConcurrentHashMap<UUID, Boolean>();
 
 	protected boolean autoDestroy = false;
 	protected boolean destroyed = false;
 
+	/**
+	 * -- GETTER --
+	 *  Gets the current volume of this SongPlayer
+	 *
+	 * @return volume (0-100)
+	 */
+	@Getter
 	protected byte volume = 100;
+	/**
+	 * -- GETTER --
+	 *  Returns
+	 *  for Fade in effect
+	 *
+	 * @return Fade
+	 */
+	@Getter
 	protected Fade fadeIn;
+	/**
+	 * -- GETTER --
+	 *  Returns
+	 *  for Fade out effect
+	 *
+	 * @return Fade
+	 */
+	@Getter
 	protected Fade fadeOut;
 	protected Fade fadeTemp = null;
 	protected RepeatMode repeat = RepeatMode.NO;
+	/**
+	 * -- GETTER --
+	 *  Gets whether the SongPlayer will choose next song from player randomly
+	 *
+	 * @return is random
+	 */
+	@Getter
 	protected boolean random = false;
 
 	protected Map<Song, Boolean> songQueue = new ConcurrentHashMap<Song, Boolean>(); //True if already played
@@ -51,9 +111,14 @@ public abstract class SongPlayer {
 
 	protected SoundCategory soundCategory;
 	protected ChannelMode channelMode = new MonoMode();
+	/**
+	 * -- GETTER --
+	 *  Check if 6 octave range is enabled
+	 *
+	 * @return true if enabled, false otherwise
+	 */
+	@Getter
 	protected boolean enable10Octave = false;
-
-	com.xxmicloxx.NoteBlockAPI.SongPlayer oldSongPlayer;
 
 	public SongPlayer(Song song) {
 		this(new Playlist(song), SoundCategory.MASTER);
@@ -98,45 +163,6 @@ public abstract class SongPlayer {
 		start();
 	}
 
-	/**
-	 * @deprecated
-	 * @param songPlayer
-	 */
-	SongPlayer(com.xxmicloxx.NoteBlockAPI.SongPlayer songPlayer){
-		oldSongPlayer = songPlayer;
-		com.xxmicloxx.NoteBlockAPI.Song s = songPlayer.getSong();
-		HashMap<Integer, Layer> layerHashMap = new HashMap<Integer, Layer>();
-		for (Integer i : s.getLayerHashMap().keySet()){
-			com.xxmicloxx.NoteBlockAPI.Layer l = s.getLayerHashMap().get(i);
-			HashMap<Integer, Note> noteHashMap = new HashMap<Integer, Note>();
-			for (Integer iL : l.getHashMap().keySet()){
-				com.xxmicloxx.NoteBlockAPI.Note note = l.getHashMap().get(iL);
-				noteHashMap.put(iL, new Note(note.getInstrument(), note.getKey()));
-			}
-			Layer layer = new Layer();
-			layer.setNotesAtTicks(noteHashMap);
-			layer.setVolume(l.getVolume());
-			layerHashMap.put(i, layer);
-		}
-		CustomInstrument[] instruments = new CustomInstrument[s.getCustomInstruments().length];
-		for (int i = 0; i < s.getCustomInstruments().length; i++){
-			com.xxmicloxx.NoteBlockAPI.CustomInstrument ci = s.getCustomInstruments()[i];
-			instruments[i] = new CustomInstrument(ci.getIndex(), ci.getName(), ci.getSoundfile());
-		}
-		song = new Song(s.getSpeed(), layerHashMap, s.getSongHeight(), s.getLength(), s.getTitle(), s.getAuthor(), s.getDescription(), s.getPath(), instruments);
-		playlist = new Playlist(song);
-		
-		fadeIn = new Fade(FadeType.NONE, 60);
-		fadeIn.setFadeStart((byte) 0);
-		fadeIn.setFadeTarget(volume);
-		
-		fadeOut = new Fade(FadeType.NONE, 60);
-		fadeOut.setFadeStart(volume);
-		fadeOut.setFadeTarget((byte) 0);
-
-		plugin = NoteBlockAPI.getAPI();
-	}
-
 	void update(String key, Object value){
 		switch (key){
 			case "playing":
@@ -161,10 +187,10 @@ public abstract class SongPlayer {
 				tick = (short) value;
 				break;
 			case "addplayer":
-				addPlayer(((Player) value).getUniqueId(), false);
+				addPlayer(((Player) value).getUniqueId());
 				break;
 			case "removeplayer":
-				removePlayer(((Player) value).getUniqueId(), false);
+				removePlayer(((Player) value).getUniqueId());
 				break;
 			case "autoDestroy":
 				autoDestroy = (boolean) value;
@@ -197,7 +223,6 @@ public abstract class SongPlayer {
 	@Deprecated
 	public void setFadeType(FadeType fadeType) {
 		fadeIn.setType(fadeType);
-		CallUpdate("fadetype", "FADE_" + fadeType.name());
 	}
 
 	/**
@@ -218,7 +243,6 @@ public abstract class SongPlayer {
 	@Deprecated
 	public void setFadeTarget(byte fadeTarget) {
 		fadeIn.setFadeTarget(fadeTarget);
-		CallUpdate("fadeTarget", fadeTarget);
 	}
 
 	/**
@@ -239,7 +263,6 @@ public abstract class SongPlayer {
 	@Deprecated
 	public void setFadeStart(byte fadeStart) {
 		fadeIn.setFadeStart(fadeStart);
-		CallUpdate("fadeStart", fadeStart);
 	}
 
 	/**
@@ -260,7 +283,6 @@ public abstract class SongPlayer {
 	@Deprecated
 	public void setFadeDuration(int fadeDuration) {
 		fadeIn.setFadeDuration(fadeDuration);
-		CallUpdate("fadeDuration", fadeDuration);
 	}
 
 	/**
@@ -282,16 +304,6 @@ public abstract class SongPlayer {
 	@Deprecated
 	public void setFadeDone(int fadeDone) {
 		fadeIn.setFadeDone(fadeDone);
-		CallUpdate("fadeDone", fadeDone);
-	}
-
-	/**
-	 * Check if 6 octave range is enabled
-	 *
-	 * @return true if enabled, false otherwise
-	 */
-	public boolean isEnable10Octave() {
-		return enable10Octave;
 	}
 
 	/**
@@ -309,7 +321,7 @@ public abstract class SongPlayer {
 	 * Starts this SongPlayer
 	 */
 	private void start() {
-		plugin.doAsync(() -> {
+		plugin.doTask(() -> {
 			while (!destroyed) {
 				long startTime = System.currentTimeMillis();
 				lock.lock();
@@ -325,7 +337,7 @@ public abstract class SongPlayer {
 								fading = false;
 								if (!playing) {
 									SongStoppedEvent event = new SongStoppedEvent(this);
-									plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+									plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 									volume = fadeIn.getFadeTarget();
 									continue;
 								}
@@ -340,7 +352,6 @@ public abstract class SongPlayer {
 							if (fade != -1){
 								volume = (byte) fade;
 							}
-							CallUpdate("fadeDone", fadeIn.getFadeDone());
 						} else if (tick >= song.getLength() - fadeOut.getFadeDuration()){
 							int fade = fadeOut.calculateFade();
 							if (fade != -1){
@@ -352,12 +363,11 @@ public abstract class SongPlayer {
 						if (tick > song.getLength()) {
 							tick = -1;
 							fadeIn.setFadeDone(0);
-							CallUpdate("fadeDone", fadeIn.getFadeDone());
 							fadeOut.setFadeDone(0);
 							volume = fadeIn.getFadeTarget();
 							if (repeat == RepeatMode.ONE){
 								SongLoopEvent event = new SongLoopEvent(this);
-								plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+								plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 
 								if (!event.isCancelled()) {
 									continue;
@@ -380,10 +390,9 @@ public abstract class SongPlayer {
 										}
 										song = left.get(rng.nextInt(left.size()));
 										actualSong = playlist.getIndex(song);
-										CallUpdate("song", song);
 										if (repeat == RepeatMode.ALL) {
 											SongLoopEvent event = new SongLoopEvent(this);
-											plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+											plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 
 											if (!event.isCancelled()) {
 												continue;
@@ -393,26 +402,23 @@ public abstract class SongPlayer {
 										song = left.get(rng.nextInt(left.size()));
 										actualSong = playlist.getIndex(song);
 
-										CallUpdate("song", song);
 										SongNextEvent event = new SongNextEvent(this);
-										plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+										plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 										continue;
 									}
 								} else {
 									if (playlist.hasNext(actualSong)) {
 										actualSong++;
 										song = playlist.get(actualSong);
-										CallUpdate("song", song);
 										SongNextEvent event = new SongNextEvent(this);
-										plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+										plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 										continue;
 									} else {
 										actualSong = 0;
 										song = playlist.get(actualSong);
-										CallUpdate("song", song);
 										if (repeat == RepeatMode.ALL) {
 											SongLoopEvent event = new SongLoopEvent(this);
-											plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+											plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 
 											if (!event.isCancelled()) {
 												continue;
@@ -423,18 +429,17 @@ public abstract class SongPlayer {
 							}
 							playing = false;
 							SongEndEvent event = new SongEndEvent(this);
-							plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+							plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 							if (autoDestroy) {
 								destroy();
 							}
 							continue;
 						}
-						CallUpdate("tick", tick);
 						
-						plugin.doSync(() -> {
+						plugin.doTask(() -> {
 							try {
 								for (UUID uuid : playerList.keySet()) {
-									Player player = Bukkit.getPlayer(uuid);
+									Player player = VelocityUtils.getPlayer(uuid);
 									if (player == null) {
 										// offline...
 										continue;
@@ -442,7 +447,7 @@ public abstract class SongPlayer {
 									playTick(player, tick);
 								}
 							} catch (Exception e){
-								Bukkit.getLogger().severe("An error occurred during the playback of song "
+								VelocityUtils.error("An error occurred during the playback of song "
 										+ (song != null ?
 										song.getPath() + " (" + song.getAuthor() + " - " + song.getTitle() + ")"
 										: "null"));
@@ -451,7 +456,7 @@ public abstract class SongPlayer {
 						});
 					}
 				} catch (Exception e) {
-					Bukkit.getLogger().severe("An error occurred during the playback of song "
+					VelocityUtils.error("An error occurred during the playback of song "
 							+ (song != null ?
 									song.getPath() + " (" + song.getAuthor() + " - " + song.getTitle() + ")"
 									: "null"));
@@ -490,23 +495,7 @@ public abstract class SongPlayer {
 			}
 		}
 	}
-	
-	/**
-	 * Returns {@link Fade} for Fade in effect
-	 * @return Fade
-	 */
-	public Fade getFadeIn(){
-		return fadeIn;
-	}
-	
-	/**
-	 * Returns {@link Fade} for Fade out effect
-	 * @return Fade
-	 */
-	public Fade getFadeOut(){
-		return fadeOut;
-	}
-	
+
 	/**
 	 * Gets list of current Player UUIDs listening to this SongPlayer
 	 * @return list of Player UUIDs
@@ -529,11 +518,8 @@ public abstract class SongPlayer {
 	 * Adds a Player to the list of Players listening to this SongPlayer
 	 * @param player's uuid
 	 */
-	public void addPlayer(UUID player) {
-		addPlayer(player, true);
-	}
 	
-	private void addPlayer(UUID player, boolean notify){
+	private void addPlayer(UUID player){
 		lock.lock();
 		try {
 			if (!playerList.containsKey(player)) {
@@ -544,12 +530,6 @@ public abstract class SongPlayer {
 				}
 				songs.add(this);
 				NoteBlockAPI.setSongPlayersByPlayer(player, songs);
-				if (notify){
-					Player p = Bukkit.getPlayer(player);
-					if (p != null){
-						CallUpdate("addplayer", p);
-					}
-				}
 			}
 		} finally {
 			lock.unlock();
@@ -579,7 +559,6 @@ public abstract class SongPlayer {
 		lock.lock();
 		try {
 			this.autoDestroy = autoDestroy;
-			CallUpdate("autoDestroy", autoDestroy);
 		} finally {
 			lock.unlock();
 		}
@@ -599,7 +578,7 @@ public abstract class SongPlayer {
 		lock.lock();
 		try {
 			SongDestroyingEvent event = new SongDestroyingEvent(this);
-			plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+			plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 			//Bukkit.getScheduler().cancelTask(threadId);
 			if (event.isCancelled()) {
 				return;
@@ -607,19 +586,9 @@ public abstract class SongPlayer {
 			destroyed = true;
 			playing = false;
 			setTick((short) -1);
-			CallUpdate("destroyed", destroyed);
-			CallUpdate("playing", playing);
 		} finally {
 			lock.unlock();
 		}
-	}
-
-	/**
-	 * Returns whether the SongPlayer is actively playing
-	 * @return is playing
-	 */
-	public boolean isPlaying() {
-		return playing;
 	}
 
 	/**
@@ -654,19 +623,9 @@ public abstract class SongPlayer {
 			volume = fadeIn.getFadeTarget();
 			if (!playing) {
 				SongStoppedEvent event = new SongStoppedEvent(this);
-				plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+				plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 			}
 		}
-
-		CallUpdate("playing", playing);
-	}
-
-	/**
-	 * Gets the current tick of this SongPlayer
-	 * @return
-	 */
-	public short getTick() {
-		return tick;
 	}
 
 	/**
@@ -675,7 +634,6 @@ public abstract class SongPlayer {
 	 */
 	public void setTick(short tick) {
 		this.tick = tick;
-		CallUpdate("tick", tick);
 	}
 
 	/**
@@ -688,21 +646,11 @@ public abstract class SongPlayer {
 	
 	/**
 	 * Removes a player from this SongPlayer
-	 * @param uuid of player to remove
+	 * @param player  UUID of player to remove
 	 */
-	public void removePlayer(UUID uuid) {
-		removePlayer(uuid, true);
-	}
-	
-	private void removePlayer(UUID player, boolean notify) {
+	public void removePlayer(UUID player) {
 		lock.lock();
 		try {
-			if (notify){
-				Player p = Bukkit.getPlayer(player);
-				if (p != null){
-					CallUpdate("removeplayer", p);
-				}
-			}
 			playerList.remove(player);
 			if (NoteBlockAPI.getSongPlayersByPlayer(player) == null) {
 				return;
@@ -713,20 +661,12 @@ public abstract class SongPlayer {
 			NoteBlockAPI.setSongPlayersByPlayer(player, songs);
 			if (playerList.isEmpty() && autoDestroy) {
 				SongEndEvent event = new SongEndEvent(this);
-				plugin.doSync(() -> Bukkit.getPluginManager().callEvent(event));
+				plugin.doTask(() -> NoteBlockAPI.getPlugin().getServer().getEventManager().fire(event));
 				destroy();
 			}
 		} finally {
 			lock.unlock();
 		}
-	}
-
-	/**
-	 * Gets the current volume of this SongPlayer
-	 * @return volume (0-100)
-	 */
-	public byte getVolume() {
-		return volume;
 	}
 
 	/**
@@ -747,26 +687,8 @@ public abstract class SongPlayer {
 			if (playing) fadeTemp.setFadeTarget(volume);
 			else fadeTemp.setFadeStart(volume);
 		}
-		
-		CallUpdate("volume", volume);
 	}
 
-	/**
-	 * Gets the Song being played by this SongPlayer
-	 * @return
-	 */
-	public Song getSong() {
-		return song;
-	}
-	
-	/**
-	 * Gets the Playlist being played by this SongPlayer
-	 * @return
-	 */
-	public Playlist getPlaylist() {
-		return playlist;
-	}
-	
 	/**
 	 * Sets the Playlist being played by this SongPlayer. Will affect next Song
 	 */
@@ -796,9 +718,6 @@ public abstract class SongPlayer {
 				tick = -1;
 				fadeIn.setFadeDone(0);
 				fadeOut.setFadeDone(0);
-				CallUpdate("song", song);
-				CallUpdate("fadeDone", fadeIn.getFadeDone());
-				CallUpdate("tick", tick);
 			}
 		} finally {
 			lock.unlock();
@@ -832,7 +751,6 @@ public abstract class SongPlayer {
 	 */
 	public void setCategory(SoundCategory soundCategory) {
 		this.soundCategory = soundCategory;
-		CallUpdate("soundCategory", soundCategory.name());
 	}
 	
 	/**
@@ -877,41 +795,7 @@ public abstract class SongPlayer {
 		this.random = random;
 	}
 
-	/**
-	 * Gets whether the SongPlayer will choose next song from player randomly
-	 * @return is random
-	 */
-	public boolean isRandom(){
-		return random;
-	}
-
 	public ChannelMode getChannelMode(){
 		return channelMode;
 	}
-
-	void CallUpdate(String key, Object value){
-		if (oldSongPlayer == null){
-			return;
-		}
-		try {
-			Method m = com.xxmicloxx.NoteBlockAPI.SongPlayer.class.getDeclaredMethod("update", String.class, Object.class);
-			m.setAccessible(true);
-			m.invoke(oldSongPlayer, key, value);
-		} catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException
-				| SecurityException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	void makeNewClone(Class newClass){
-		try {
-			Constructor c = newClass.getDeclaredConstructor(new Class[] { SongPlayer.class });
-			c.setAccessible(true);
-			oldSongPlayer = (com.xxmicloxx.NoteBlockAPI.SongPlayer) c.newInstance(new Object[]{this});
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
-			e.printStackTrace();
-		}
-	}
-
 }

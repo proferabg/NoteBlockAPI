@@ -9,7 +9,7 @@ public class CustomInstrument {
 	private byte index;
 	private String name;
 	private String soundFileName;
-	private org.bukkit.Sound sound;
+	private dev.simplix.protocolize.data.Sound sound;
 
 	/**
 	 * Creates a CustomInstrument
@@ -22,7 +22,7 @@ public class CustomInstrument {
 		this.name = name;
 		this.soundFileName = soundFileName.replaceAll(".ogg", "");
 		if (this.soundFileName.equalsIgnoreCase("pling")){
-			this.sound = Sound.NOTE_PLING.bukkitSound();
+			this.sound = Sound.NOTE_PLING.protocolizeSound();
 		}
 	}
 
@@ -54,7 +54,7 @@ public class CustomInstrument {
 	 * Gets the org.bukkit.Sound enum for this CustomInstrument
 	 * @return org.bukkit.Sound enum
 	 */
-	public org.bukkit.Sound getSound() {
+	public dev.simplix.protocolize.data.Sound getSound() {
 		return sound;
 	}
 }

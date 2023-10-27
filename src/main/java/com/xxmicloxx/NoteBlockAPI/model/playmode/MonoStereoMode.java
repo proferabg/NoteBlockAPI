@@ -1,11 +1,12 @@
 package com.xxmicloxx.NoteBlockAPI.model.playmode;
 
+import com.velocitypowered.api.proxy.Player;
 import com.xxmicloxx.NoteBlockAPI.model.*;
 import com.xxmicloxx.NoteBlockAPI.utils.CompatibilityUtils;
 import com.xxmicloxx.NoteBlockAPI.utils.InstrumentUtils;
 import com.xxmicloxx.NoteBlockAPI.utils.NoteUtils;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
+import dev.simplix.protocolize.api.Location;
+import dev.simplix.protocolize.api.SoundCategory;
 
 /**
  * Ignores panning of {@link Note} and {@link Layer} from nbs format and plays mono {@link Note} as fake stereo at fixed offset from {@link Player} head.

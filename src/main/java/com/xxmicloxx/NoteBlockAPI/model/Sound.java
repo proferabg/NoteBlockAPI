@@ -32,8 +32,8 @@ public enum Sound {
 	NOTE_BANJO("BLOCK_NOTE_BLOCK_BANJO");
 
 	private String[] versionDependentNames;
-	private org.bukkit.Sound cached = null;
-	private static Map<String, org.bukkit.Sound> cachedSoundMap = new HashMap<>();
+	private dev.simplix.protocolize.data.Sound cached = null;
+	private static Map<String, dev.simplix.protocolize.data.Sound> cachedSoundMap = new HashMap<>();
 
 	Sound(String... versionDependentNames) {
 		this.versionDependentNames = versionDependentNames;
@@ -41,22 +41,22 @@ public enum Sound {
 
 	/**
 	 * Attempts to retrieve the org.bukkit.Sound equivalent of a version dependent enum name
-	 * @param bukkitSoundName
-	 * @return org.bukkit.Sound enum
+	 * @param protocolizeSoundName
+	 * @return dev.simplix.protocolize.data.Sound enum
 	 */
-	public static org.bukkit.Sound getFromBukkitName(String bukkitSoundName) {
-		org.bukkit.Sound sound = cachedSoundMap.get(bukkitSoundName.toUpperCase());
+	public static dev.simplix.protocolize.data.Sound getFromProtocolizeName(String protocolizeSoundName) {
+		dev.simplix.protocolize.data.Sound sound = cachedSoundMap.get(protocolizeSoundName.toUpperCase());
 		if (sound != null)
 			return sound;
 
-		return org.bukkit.Sound.valueOf(bukkitSoundName);
+		return dev.simplix.protocolize.data.Sound.valueOf(protocolizeSoundName);
 	}
 
-	private org.bukkit.Sound getSound() {
+	private dev.simplix.protocolize.data.Sound getSound() {
 		if (cached != null) return cached;
 		for (String name : versionDependentNames) {
 			try {
-				return cached = org.bukkit.Sound.valueOf(name);
+				return cached = dev.simplix.protocolize.data.Sound.valueOf(name);
 			} catch (IllegalArgumentException ignore2) {
 				// try next
 			}
@@ -68,9 +68,9 @@ public enum Sound {
 	 * Get the bukkit sound for current server version
 	 *
 	 * Caches sound on first call
-	 * @return corresponding {@link org.bukkit.Sound}
+	 * @return corresponding {@link dev.simplix.protocolize.data.Sound}
 	 */
-	public org.bukkit.Sound bukkitSound() {
+	public dev.simplix.protocolize.data.Sound protocolizeSound() {
 		if (getSound() != null) {
 			return getSound();
 		}

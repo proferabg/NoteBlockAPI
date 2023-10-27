@@ -1,16 +1,18 @@
 package com.xxmicloxx.NoteBlockAPI.songplayer;
 
+import com.velocitypowered.api.proxy.Player;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.ChannelMode;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.MonoMode;
 import com.xxmicloxx.NoteBlockAPI.model.playmode.MonoStereoMode;
-import org.bukkit.entity.Player;
+import dev.simplix.protocolize.api.Protocolize;
+import dev.simplix.protocolize.api.SoundCategory;
+import dev.simplix.protocolize.api.player.ProtocolizePlayer;
 
 import com.xxmicloxx.NoteBlockAPI.NoteBlockAPI;
 import com.xxmicloxx.NoteBlockAPI.model.Layer;
 import com.xxmicloxx.NoteBlockAPI.model.Note;
 import com.xxmicloxx.NoteBlockAPI.model.Playlist;
 import com.xxmicloxx.NoteBlockAPI.model.Song;
-import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
 
 /**
  * SongPlayer playing to everyone added to it no matter where he is
@@ -22,26 +24,18 @@ public class RadioSongPlayer extends SongPlayer {
 	
 	public RadioSongPlayer(Song song) {
 		super(song);
-		makeNewClone(com.xxmicloxx.NoteBlockAPI.RadioSongPlayer.class);
 	}
 
 	public RadioSongPlayer(Song song, SoundCategory soundCategory) {
 		super(song, soundCategory);
-		makeNewClone(com.xxmicloxx.NoteBlockAPI.RadioSongPlayer.class);
-	}
-
-	private RadioSongPlayer(com.xxmicloxx.NoteBlockAPI.SongPlayer songPlayer) {
-		super(songPlayer);
 	}
 
 	public RadioSongPlayer(Playlist playlist, SoundCategory soundCategory) {
 		super(playlist, soundCategory);
-		makeNewClone(com.xxmicloxx.NoteBlockAPI.RadioSongPlayer.class);
 	}
 
 	public RadioSongPlayer(Playlist playlist) {
 		super(playlist);
-		makeNewClone(com.xxmicloxx.NoteBlockAPI.RadioSongPlayer.class);
 	}
 
 	@Override
@@ -56,7 +50,8 @@ public class RadioSongPlayer extends SongPlayer {
 
 			float volume = (layer.getVolume() * (int) this.volume * (int) playerVolume * note.getVelocity()) / 100_00_00_00F;
 
-			channelMode.play(player, player.getEyeLocation(), song, layer, note, soundCategory, volume, !enable10Octave);
+			ProtocolizePlayer pp = Protocolize.playerProvider().player(player.getUniqueId());
+			channelMode.play(player, pp.location(), song, layer, note, soundCategory, volume, !enable10Octave);
 		}
 	}
 

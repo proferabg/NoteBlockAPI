@@ -1,100 +1,20 @@
 package com.xxmicloxx.NoteBlockAPI.utils;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.entity.Player;
+import com.velocitypowered.api.proxy.Player;
+import dev.simplix.protocolize.api.Location;
+import dev.simplix.protocolize.api.Protocolize;
+import dev.simplix.protocolize.api.SoundCategory;
+import dev.simplix.protocolize.api.player.ProtocolizePlayer;
+import dev.simplix.protocolize.data.Sound;
 
 import com.xxmicloxx.NoteBlockAPI.model.CustomInstrument;
-import com.xxmicloxx.NoteBlockAPI.model.SoundCategory;
 
 /**
  * Fields/methods for reflection &amp; version checking
  */
 public class CompatibilityUtils {
-
-	public static final String OBC_DIR = Bukkit.getServer().getClass().getPackage().getName();
-	public static final String NMS_DIR = OBC_DIR.replaceFirst("org.bukkit.craftbukkit", "net.minecraft.server");
-
-	private static Class<? extends Enum> soundCategoryClass;
-	private static HashMap<String, Method> playSoundMethod = new HashMap<>();
-
-	private static float serverVersion = -1;
-
-	/**
-	 * Gets NMS class from given name
-	 * @param name of class (w/ package)
-	 * @return Class of given name
-	 */
-	public static Class<?> getMinecraftClass(String name) {
-		try {
-			return Class.forName(NMS_DIR + "." + name);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	/**
-	 * Gets CraftBukkit class from given name
-	 * @param name of class (w/ package)
-	 * @return Class of given name
-	 */
-	public static Class<?> getCraftBukkitClass(String name) {
-		try {
-			return Class.forName(OBC_DIR + "." + name);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	private static Class<? extends Enum> getSoundCategoryClass() throws ClassNotFoundException {
-		if (isSoundCategoryCompatible() && soundCategoryClass == null){
-			soundCategoryClass = (Class<? extends Enum>) Class.forName("org.bukkit.SoundCategory");
-		}
-		return soundCategoryClass;
-	}
-
-	private static Method getPlaySoundMethod(Class sound, boolean soundcategory) throws ClassNotFoundException, NoSuchMethodException {
-		Method method = playSoundMethod.get(sound.getName() + soundcategory);
-		if (method == null){
-			if (soundcategory) {
-				method = Player.class.getMethod("playSound", Location.class, sound,
-						getSoundCategoryClass(), float.class, float.class);
-			} else {
-				method = Player.class.getMethod("playSound", Location.class, sound, float.class, float.class);
-			}
-			playSoundMethod.put(sound.getName() + soundcategory, method);
-		}
-		return method;
-	}
-
-	/**
-	 * Returns whether the version of Bukkit is or is after 1.12
-	 * @return version is after 1.12
-	 * @deprecated Compare {@link #getServerVersion()} with 0.0112f
-	 */
-	public static boolean isPost1_12() {
-		return getServerVersion() >= 0.0112f;
-	}
-
-	/**
-	 * Returns if SoundCategory is able to be used
-	 * @see org.bukkit.SoundCategory
-	 * @see SoundCategory
-	 * @return can use SoundCategory
-	 */
-	protected static boolean isSoundCategoryCompatible() {
-		return getServerVersion() >= 0.0111f;
-	}
-	
 	/**
 	 * Plays a sound using NMS &amp; reflection
 	 * @param player
@@ -106,8 +26,7 @@ public class CompatibilityUtils {
 	 * 
 	 * @deprecated use {@link #playSound(Player, Location, String, SoundCategory, float, float, float)}
 	 */
-	public static void playSound(Player player, Location location, String sound, 
-			SoundCategory category, float volume, float pitch) {
+	public static void playSound(Player player, Location location, String sound, SoundCategory category, float volume, float pitch) {
 		playSound(player, location, sound, category, volume, pitch, 0);
 	}
 
@@ -121,8 +40,7 @@ public class CompatibilityUtils {
 	 * @param pitch
 	 * @deprecated use {@link #playSound(Player, Location, String, SoundCategory, float, float, float)}
 	 */
-	public static void playSound(Player player, Location location, String sound, 
-			SoundCategory category, float volume, float pitch, boolean stereo) {
+	public static void playSound(Player player, Location location, String sound, SoundCategory category, float volume, float pitch, boolean stereo) {
 		playSound(player, location, sound, category, volume, pitch, stereo ? 2 : 0);
 	}
 
@@ -137,8 +55,7 @@ public class CompatibilityUtils {
 	 * 
 	 * @deprecated use {@link #playSound(Player, Location, Sound, SoundCategory, float, float, float)}
 	 */
-	public static void playSound(Player player, Location location, Sound sound, 
-			SoundCategory category, float volume, float pitch) {
+	public static void playSound(Player player, Location location, Sound sound, SoundCategory category, float volume, float pitch) {
 		playSound(player, location, sound, category, volume, pitch, 0);
 	}
 	
@@ -152,8 +69,7 @@ public class CompatibilityUtils {
 	 * @param pitch
 	 * @deprecated use {@link #playSound(Player, Location, Sound, SoundCategory, float, float, float)}
 	 */
-	public static void playSound(Player player, Location location, Sound sound, 
-			SoundCategory category, float volume, float pitch, boolean stereo) {
+	public static void playSound(Player player, Location location, Sound sound,  SoundCategory category, float volume, float pitch, boolean stereo) {
 		playSound(player, location, sound, category, volume, pitch, stereo ? 2 : 0);
 	}
 
@@ -167,8 +83,7 @@ public class CompatibilityUtils {
 	 * @param pitch
 	 * @param distance
 	 */
-	public static void playSound(Player player, Location location, String sound,
-								 SoundCategory category, float volume, float pitch, float distance) {
+	public static void playSound(Player player, Location location, String sound, SoundCategory category, float volume, float pitch, float distance) {
 		playSoundUniversal(player, location, sound, category, volume, pitch, distance);
 	}
 
@@ -182,24 +97,22 @@ public class CompatibilityUtils {
 	 * @param pitch
 	 * @param distance
 	 */
-	public static void playSound(Player player, Location location, Sound sound,
-								 SoundCategory category, float volume, float pitch, float distance) {
+	public static void playSound(Player player, Location location, Sound sound, SoundCategory category, float volume, float pitch, float distance) {
 		playSoundUniversal(player, location, sound, category, volume, pitch, distance);
 	}
 
-	private static void playSoundUniversal(Player player, Location location, Object sound,
-								 SoundCategory category, float volume, float pitch, float distance) {
-		try {
-			if (isSoundCategoryCompatible()) {
-				Method method = getPlaySoundMethod(sound.getClass(), true);
-				Enum<?> soundCategoryEnum = Enum.valueOf(getSoundCategoryClass(), category.name());
-				method.invoke(player, MathUtils.stereoPan(location, distance), sound, soundCategoryEnum, volume, pitch);
-			} else {
-				Method method = getPlaySoundMethod(sound.getClass(), false);
-				method.invoke(player, MathUtils.stereoPan(location, distance), sound, volume, pitch);
-			}
-		} catch (NoSuchMethodException | ClassNotFoundException | IllegalAccessException | InvocationTargetException e) {
-			e.printStackTrace();
+	private static void playSoundUniversal(Player player, Location location, Object sound, SoundCategory category, float volume, float pitch, float distance) {
+		ProtocolizePlayer protocolizePlayer = Protocolize.playerProvider().player(player.getUniqueId());
+
+		Sound protocolizeSound = null;
+		if(sound instanceof String soundStr){
+			protocolizeSound = Sound.valueOf(soundStr.replace(".", "_").toUpperCase());
+		} else if(sound instanceof Sound s){
+			protocolizeSound = s;
+		}
+
+		if(protocolizePlayer != null && protocolizeSound != null){
+			protocolizePlayer.playSound(MathUtils.stereoPan(location, distance), protocolizeSound, category, volume, pitch);
 		}
 	}
 
@@ -269,30 +182,7 @@ public class CompatibilityUtils {
 	 * @return e.g. 0.011401f for 1.14.1
 	 */
 	public static float getServerVersion(){
-		if (serverVersion != -1){
-			return serverVersion;
-		}
-
-		String versionInfo = Bukkit.getServer().getVersion();
-		int start = versionInfo.lastIndexOf('(');
-		int end = versionInfo.lastIndexOf(')');
-
-		String[] versionParts = versionInfo.substring(start + 5, end).split("\\.");
-
-		String versionString = "0.";
-		for (String part : versionParts){
-			if (part.length() == 1){
-				versionString += "0";
-			}
-
-			versionString += part;
-		}
-		serverVersion = Float.parseFloat(versionString);
-		return serverVersion;
-	}
-
-	public static Material getNoteBlockMaterial(){
-		return Material.valueOf("NOTE_BLOCK");
+		return 0.012002f;
 	}
 
 }

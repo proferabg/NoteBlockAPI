@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import com.xxmicloxx.NoteBlockAPI.VelocityUtils;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import com.xxmicloxx.NoteBlockAPI.model.CustomInstrument;
 import com.xxmicloxx.NoteBlockAPI.model.Layer;
@@ -194,7 +194,7 @@ public class NBSDecoder {
 			if (songFile != null) {
 				file = songFile.getName();
 			}
-			Bukkit.getServer().getConsoleSender().sendMessage(ChatColor.RED + "Song is corrupted: " + file);
+			VelocityUtils.error(NamedTextColor.RED + "Song is corrupted: " + file);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

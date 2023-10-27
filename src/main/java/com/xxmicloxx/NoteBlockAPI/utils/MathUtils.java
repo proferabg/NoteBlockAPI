@@ -1,11 +1,11 @@
 package com.xxmicloxx.NoteBlockAPI.utils;
 
-import org.bukkit.Location;
+import dev.simplix.protocolize.api.Location;
 
 public class MathUtils {
 
-	private static double[] cos = new double[360];
-	private static double[] sin = new double[360];
+	private static final double[] cos = new double[360];
+	private static final double[] sin = new double[360];
 
 	static {
 		for (int deg = 0; deg < 360; deg++) {
@@ -23,12 +23,12 @@ public class MathUtils {
 	}
 	
 	public static Location stereoSourceLeft(Location location, float distance) {
-		int angle = getAngle(location.getYaw());
-	    return location.clone().add(-getCos()[angle] * distance, 0, -getSin()[angle] * distance);
+		int angle = getAngle(location.yaw());
+	    return new Location(location.x(), location.y(), location.z(), location.yaw(), location.pitch()).add(-getCos()[angle] * distance, 0, -getSin()[angle] * distance);
 	}
 	public static Location stereoSourceRight(Location location, float distance) {
-		int angle = getAngle(location.getYaw());
-	    return location.clone().add(getCos()[angle] * distance, 0, getSin()[angle] * distance);
+		int angle = getAngle(location.yaw());
+	    return new Location(location.x(), location.y(), location.z(), location.yaw(), location.pitch()).add(getCos()[angle] * distance, 0, getSin()[angle] * distance);
 	}
 
 	/**
@@ -38,8 +38,8 @@ public class MathUtils {
 	 * @return
 	 */
 	public static Location stereoPan(Location location, float distance){
-		int angle = getAngle(location.getYaw());
-		return location.clone().add( getCos()[angle] * distance, 0, getSin()[angle] * distance);
+		int angle = getAngle(location.yaw());
+		return new Location(location.x(), location.y(), location.z(), location.yaw(), location.pitch()).add( getCos()[angle] * distance, 0, getSin()[angle] * distance);
 	}
 
 	private static int getAngle(float yaw){

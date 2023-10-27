@@ -1,38 +1,63 @@
 package com.xxmicloxx.NoteBlockAPI;
 
+import com.google.inject.Inject;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
+import com.velocitypowered.api.plugin.Dependency;
+import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.Player;
+import com.velocitypowered.api.proxy.ProxyServer;
+import com.velocitypowered.api.scheduler.ScheduledTask;
 import com.xxmicloxx.NoteBlockAPI.songplayer.SongPlayer;
-import com.xxmicloxx.NoteBlockAPI.utils.MathUtils;
-import com.xxmicloxx.NoteBlockAPI.utils.Updater;
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.DrilldownPie;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-import org.bukkit.event.HandlerList;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.RegisteredListener;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scheduler.BukkitWorker;
+import lombok.Getter;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 /**
  * Main class; contains methods for playing and adjusting songs for players
  */
-public class NoteBlockAPI extends JavaPlugin {
+@Plugin(
+		id = BuildConstants.ID,
+		name = BuildConstants.NAME,
+		version = BuildConstants.VERSION,
+		description = BuildConstants.DESCRIPTION,
+		authors = BuildConstants.DEVELOPERS,
+		dependencies = {
+				@Dependency(id = "protocolize")
+		}
+)
+public class NoteBlockAPI {
 
+	@Getter
 	private static NoteBlockAPI plugin;
+
+	@Getter
+	private final ProxyServer server;
+
+	@Getter
+	private final Logger logger;
+
+	@Getter
+	private final Path dataDirectory;
+
+	@Inject
+	public NoteBlockAPI(ProxyServer _server, Logger _logger, @DataDirectory Path _dataDirectory) {
+		server = _server;
+		logger = _logger;
+		dataDirectory = _dataDirectory;
+		plugin = this;
+		VelocityUtils.init(this);
+	}
 	
 	private Map<UUID, ArrayList<SongPlayer>> playingSongs = new ConcurrentHashMap<UUID, ArrayList<SongPlayer>>();
 	private Map<UUID, Byte> playerVolume = new ConcurrentHashMap<UUID, Byte>();
 
 	private boolean disabling = false;
-	
-	private HashMap<Plugin, Boolean> dependentPlugins = new HashMap<>();
 
 	/**
 	 * Returns true if a Player is currently receiving a song
@@ -132,94 +157,19 @@ public class NoteBlockAPI extends JavaPlugin {
 		plugin.playingSongs.put(player, songs);
 	}
 
-	@Override
-	public void onEnable() {
-		plugin = this;
-		
-		for (Plugin pl : getServer().getPluginManager().getPlugins()){
-			if (pl.getDescription().getDepend().contains("NoteBlockAPI") || pl.getDescription().getSoftDepend().contains("NoteBlockAPI")){
-				dependentPlugins.put(pl, false);
-			}
-		}
-		
-		Metrics metrics = new Metrics(this, 1083);
-		
-		
-		new NoteBlockPlayerMain().onEnable();
-		
-		getServer().getScheduler().runTaskLater(this, new Runnable() {
-			
-			@Override
-			public void run() {
-				Plugin[] plugins = getServer().getPluginManager().getPlugins();
-		        Type[] types = new Type[]{PlayerRangeStateChangeEvent.class, SongDestroyingEvent.class, SongEndEvent.class, SongStoppedEvent.class };
-		        for (Plugin plugin : plugins) {
-		            ArrayList<RegisteredListener> rls = HandlerList.getRegisteredListeners(plugin);
-		            for (RegisteredListener rl : rls) {
-		                Method[] methods = rl.getListener().getClass().getDeclaredMethods();
-		                for (Method m : methods) {
-		                    Type[] params = m.getParameterTypes();
-		                    param:
-		                    for (Type paramType : params) {
-		                    	for (Type type : types){
-		                    		if (paramType.equals(type)) {
-		                    			dependentPlugins.put(plugin, true);
-		                    			break param;
-		                    		}
-		                    	}
-		                    }
-		                }
-
-		            }
-		        }
-		        
-		        metrics.addCustomChart(new DrilldownPie("deprecated", () -> {
-			        Map<String, Map<String, Integer>> map = new HashMap<>();
-			        for (Plugin pl : dependentPlugins.keySet()){
-			        	String deprecated = dependentPlugins.get(pl) ? "yes" : "no";
-			        	Map<String, Integer> entry = new HashMap<>();
-				        entry.put(pl.getDescription().getFullName(), 1);
-				        map.put(deprecated, entry);
-			        }
-			        return map;
-			    }));
-			}
-		}, 1);
-		
-		getServer().getScheduler().runTaskTimerAsynchronously(this, new Runnable() {
-			
-			@Override
-			public void run() {
-				try {
-					if (Updater.checkUpdate("19287", getDescription().getVersion())){
-						Bukkit.getLogger().info(String.format("[%s] New update available!", plugin.getDescription().getName()));
-					}
-				} catch (IOException e) {
-					Bukkit.getLogger().info(String.format("[%s] Cannot receive update from Spigot resource page!", plugin.getDescription().getName()));
-				}
-			}
-		}, 20*10, 20 * 60 * 60 * 24);
+	@Subscribe
+	public void onProxyInitialization(ProxyInitializeEvent event) {
+		getServer().getCommandManager().register("test", new NBSCommand());
 	}
 
-	@Override
-	public void onDisable() {    	
+	@Subscribe
+	public void onProxyShutdown(ProxyShutdownEvent event) {
 		disabling = true;
-		Bukkit.getScheduler().cancelTasks(this);
-		List<BukkitWorker> workers = Bukkit.getScheduler().getActiveWorkers();
-		for (BukkitWorker worker : workers){
-			if (!worker.getOwner().equals(this))
-				continue;
-			worker.getThread().interrupt();
-		}
-		NoteBlockPlayerMain.plugin.onDisable();
+		getServer().getScheduler().tasksByPlugin(this).forEach(ScheduledTask::cancel);
 	}
 
-	public void doSync(Runnable runnable) {
-		getServer().getScheduler().runTask(this, runnable);
-	}
-
-	public void doAsync(Runnable runnable) {
-		getServer().getScheduler().runTaskAsynchronously(this, runnable);
+	public void doTask(Runnable runnable) {
+		getServer().getScheduler().buildTask(this, runnable).schedule();
 	}
 
 	public boolean isDisabling() {
@@ -229,42 +179,4 @@ public class NoteBlockAPI extends JavaPlugin {
 	public static NoteBlockAPI getAPI(){
 		return plugin;
 	}
-	
-	protected void handleDeprecated(StackTraceElement[] ste){
-		int pom = 1;
-		String clazz = ste[pom].getClassName();
-		while (clazz.startsWith("com.xxmicloxx.NoteBlockAPI")){
-			pom++;
-			clazz = ste[pom].getClassName();
-		}
-		String[] packageParts = clazz.split("\\.");
-		ArrayList<Plugin> plugins = new ArrayList<Plugin>();
-		plugins.addAll(dependentPlugins.keySet());
-		
-		ArrayList<Plugin> notResult = new ArrayList<Plugin>();
-		parts:
-		for (int i = 0; i < packageParts.length - 1; i++){
-			
-			for (Plugin pl : plugins){
-				if (notResult.contains(pl)){ continue;}
-				if (plugins.size() - notResult.size() == 1){
-					break parts;
-				}
-				String[] plParts = pl.getDescription().getMain().split("\\.");
-				if (!packageParts[i].equalsIgnoreCase(plParts[i])){
-					notResult.add(pl);
-					continue;
-				}
-			}
-			plugins.removeAll(notResult);
-			notResult.clear();
-		}
-		
-		plugins.removeAll(notResult);
-		notResult.clear();
-		if (plugins.size() == 1){
-			dependentPlugins.put(plugins.get(0), true);
-		}
-	}
-	
 }
