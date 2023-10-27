@@ -1,8 +1,10 @@
 package com.xxmicloxx.NoteBlockAPI.utils;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import com.velocitypowered.api.proxy.Player;
+import com.xxmicloxx.NoteBlockAPI.VelocityUtils;
 import dev.simplix.protocolize.api.Location;
 import dev.simplix.protocolize.api.Protocolize;
 import dev.simplix.protocolize.api.SoundCategory;
@@ -15,6 +17,9 @@ import com.xxmicloxx.NoteBlockAPI.model.CustomInstrument;
  * Fields/methods for reflection &amp; version checking
  */
 public class CompatibilityUtils {
+
+	private static List<String> unknownSounds = new ArrayList<>();
+
 	/**
 	 * Plays a sound using NMS &amp; reflection
 	 * @param player
@@ -106,7 +111,17 @@ public class CompatibilityUtils {
 
 		Sound protocolizeSound = null;
 		if(sound instanceof String soundStr){
-			protocolizeSound = Sound.valueOf(soundStr.replace(".", "_").toUpperCase());
+			try {
+				String bestMatch = soundStr.replace(".", "_").toUpperCase();
+				if(bestMatch.contains("ENTITY_FIREWORK_B"))
+					bestMatch = bestMatch.replace("ENTITY_FIREWORK_B", "ENTITY_FIREWORK_ROCKET_B");
+				protocolizeSound = Sound.valueOf(bestMatch);
+			} catch (Exception e){
+				if(!unknownSounds.contains(soundStr)){
+					unknownSounds.add(soundStr);
+					VelocityUtils.error("Could not find sound for: " + soundStr);
+				}
+			}
 		} else if(sound instanceof Sound s){
 			protocolizeSound = s;
 		}
