@@ -11,7 +11,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 
 import java.io.File;
 
-public class NBSCommand implements SimpleCommand {
+public class NBAPICommand implements SimpleCommand {
     @Override
     public void execute(final Invocation invocation) {
         CommandSource source = invocation.source();

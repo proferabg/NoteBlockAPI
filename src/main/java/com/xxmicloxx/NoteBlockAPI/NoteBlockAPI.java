@@ -57,6 +57,7 @@ public class NoteBlockAPI {
 	private Map<UUID, ArrayList<SongPlayer>> playingSongs = new ConcurrentHashMap<UUID, ArrayList<SongPlayer>>();
 	private Map<UUID, Byte> playerVolume = new ConcurrentHashMap<UUID, Byte>();
 
+	@Getter
 	private boolean disabling = false;
 
 	/**
@@ -159,7 +160,7 @@ public class NoteBlockAPI {
 
 	@Subscribe
 	public void onProxyInitialization(ProxyInitializeEvent event) {
-		getServer().getCommandManager().register("test", new NBSCommand());
+		getServer().getCommandManager().register("nbapi", new NBAPICommand());
 	}
 
 	@Subscribe
@@ -172,10 +173,6 @@ public class NoteBlockAPI {
 		getServer().getScheduler().buildTask(this, runnable).schedule();
 	}
 
-	public boolean isDisabling() {
-		return disabling;
-	}
-	
 	public static NoteBlockAPI getAPI(){
 		return plugin;
 	}
